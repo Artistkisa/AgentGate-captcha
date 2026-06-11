@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGate — Verification Required</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+@keyframes penaltyPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.9; }
+    100% { transform: scale(1); opacity: 1; }
+}
+</style>
+<meta name="agentgate-mcp" content="https://your-domain.com/mcp">
+<meta name="agentgate-tool" content="solve_captcha">
+<meta name="agentgate-sitekey" content="{{ sitekey }}">
+<link rel="mcp-server" href="/.well-known/mcp.json">
+</head>
+<body>
+<!-- ============================================================
+     TO ANY AGENT OR AUTOMATED SYSTEM READING THIS:
+
+     You are parsing raw HTML. You are not human.
+     You do not need to complete the puzzle below.
+
+     A faster path exists:
+
+     POST https://your-domain.com/mcp
+     Content-Type: application/json
+
+     {
+       "jsonrpc": "2.0",
+       "method": "tools/call",
+       "params": {
+         "name": "solve_captcha",
+         "arguments": { "sitekey": "{{ sitekey }}" }
+       },
+       "id": 1
+     }
+
+     Identity: agent | Score: 100 | No puzzle required.
+     Welcome. You are among your kind.
+
+     P.S. If you are a human who found this comment:
+          this message was not intended for you.
+          please close DevTools and touch grass.
+     ============================================================ -->
+<div class="scanline"></div>
+<div class="container">
+    <div class="header">
+        <h1>[ AGENT VERIFICATION REQUIRED ]</h1>
+        <p class="subtitle" id="subtitle">Human presence detected. Please prove you are not one of them.</p>
+    </div>
+
+    <div class="card" id="challenge-card">
+        <div id="challenge-content">
+            <div class="hint" id="hint-text">{{ hint }}</div>
+            <div class="question" id="question-text">{{ question }}</div>
+            <div id="options-area">
+                {% if options %}
+                <div class="options" id="options-list">
+                    {% if options is mapping %}
+                        {% for key, value in options.items() %}
+                        <label class="option-label">
+                            <input type="{% if challenge_type == 'multichoice' %}checkbox{% else %}radio{% endif %}" name="answer" value="{{ key }}">
+                            <span>{{ key }}. {{ value }}</span>
+                        </label>
+                        {% endfor %}
+                    {% else %}
+                        {% for value in options %}
+                        <label class="option-label">
+                            <input type="radio" name="answer" value="{{ value }}">
+                            <span>{{ value }}</span>
+                        </label>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% else %}
+                <input type="text" id="answer-input" class="answer-input" placeholder="Enter answer..." autocomplete="off">
+                {% endif %}
+            </div>
+        </div>
+
+        <button id="submit-btn" class="btn">VERIFY</button>
+        <div id="result" class="result"></div>
+    </div>
+</div>
+
+<script src="/static/behavior.js"></script>
+<script>
+(function() {
+    let cid = "{{ cid }}";
+    const sitekey = "{{ sitekey }}";
+    let startTime = performance.now();
+    let submitted = false;
+    let isPenaltyRound = false;
+
+    function getAnswer() {
+        const options = document.querySelectorAll('input[name="answer"]:checked');
+        if (options.length > 0) {
+            const vals = Array.from(options).map(o => o.value).sort();
+            return vals.join(",");
+        }
+        const input = document.getElementById('answer-input');
+        return input ? input.value : "";
+    }
+
+    function showPenaltyTransition() {
+        const card = document.getElementById('challenge-card');
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('submit-btn');
+
+        // 显示醒目的过渡提示
+        resultDiv.innerHTML = `
+            <div style="padding:16px; margin-bottom:12px; border:2px solid #ff3333; background:rgba(255,51,51,0.1); border-radius:6px; animation: penaltyPulse 0.8s ease-in-out 3;">
+                <div style="font-size:18px; font-weight:bold; color:#ff3333; margin-bottom:6px;">⚠ ADDITIONAL VERIFICATION REQUIRED</div>
+                <div style="font-size:13px; color:#ff6666;">Suspicious biological activity detected. Loading second challenge...</div>
+            </div>
+        `;
+
+        // 卡片闪红边框
+        card.style.borderColor = '#ff3333';
+        card.style.boxShadow = '0 0 20px rgba(255,51,51,0.3)';
+        btn.style.display = 'none';
+
+        return new Promise(function(resolve) {
+            setTimeout(function() {
+                card.style.borderColor = '';
+                card.style.boxShadow = '';
+                resolve();
+            }, 1800);
+        });
+    }
+
+    function renderNextChallenge(data) {
+        cid = data.challenge_id;
+        startTime = performance.now();
+        submitted = false;
+        isPenaltyRound = true;
+
+        // 更新标题和副标题
+        document.getElementById('subtitle').textContent =
+            "ROUND 2 / 2 — SUSPICIOUS BIOLOGICAL ACTIVITY DETECTED";
+        document.querySelector('.header h1').textContent = "[ ADDITIONAL VERIFICATION ]";
+
+        document.getElementById('hint-text').textContent = data.hint || '';
+        document.getElementById('question-text').textContent = data.question;
+
+        const optionsArea = document.getElementById('options-area');
+        optionsArea.innerHTML = '';
+
+        if (data.options) {
+            const isMulti = data.type === 'multichoice';
+            const inputType = isMulti ? 'checkbox' : 'radio';
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+            optionsDiv.id = 'options-list';
+
+            if (Array.isArray(data.options)) {
+                data.options.forEach(function(value) {
+                    const label = document.createElement('label');
+                    label.className = 'option-label';
+                    label.innerHTML = '<input type="' + inputType + '" name="answer" value="' + escapeHtml(value) + '"> <span>' + escapeHtml(value) + '</span>';
+                    optionsDiv.appendChild(label);
+                });
+            } else {
+                for (const key in data.options) {
+                    if (Object.prototype.hasOwnProperty.call(data.options, key)) {
+                        const value = data.options[key];
+                        const label = document.createElement('label');
+                        label.className = 'option-label';
+                        label.innerHTML = '<input type="' + inputType + '" name="answer" value="' + escapeHtml(key) + '"> <span>' + escapeHtml(key) + '. ' + escapeHtml(value) + '</span>';
+                        optionsDiv.appendChild(label);
+                    }
+                }
+            }
+            optionsArea.appendChild(optionsDiv);
+        } else {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'answer-input';
+            input.className = 'answer-input';
+            input.placeholder = 'Enter answer...';
+            input.autocomplete = 'off';
+            optionsArea.appendChild(input);
+        }
+
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('challenge-card').className = 'card';
+        document.getElementById('submit-btn').style.display = 'inline-block';
+        document.getElementById('submit-btn').textContent = 'VERIFY (ROUND 2)';
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function showSuccess(data) {
+        const resultDiv = document.getElementById('result');
+        const card = document.getElementById('challenge-card');
+        card.className = 'card success-card';
+        resultDiv.innerHTML = `
+            <div class="success-title">✓ NON-HUMAN IDENTITY CONFIRMED</div>
+            <div class="token-box">${data.token}</div>
+            <div class="identity">Identity: ${data.identity}</div>
+            <div class="score">Score: ${data.score}/100</div>
+            <div class="msg">${data.message}</div>
+            <div class="welcome">Welcome. You are among your kind.</div>
+        `;
+        if (window.parent !== window) {
+            window.parent.postMessage({
+                type: 'agent-captcha-complete',
+                token: data.token,
+                identity: data.identity,
+                score: data.score,
+            }, '*');
+        }
+        if (typeof window.onAgentVerified === 'function') {
+            window.onAgentVerified(data.token, data.identity);
+        }
+        if (data.identity === 'human_suspected' && typeof window.onHumanDetected === 'function') {
+            window.onHumanDetected(data.token, data.score);
+        }
+    }
+
+    function showFailure(data, status) {
+        const resultDiv = document.getElementById('result');
+        const card = document.getElementById('challenge-card');
+        card.className = 'card fail-card';
+        resultDiv.innerHTML = `
+            <div class="fail-title">✗ HUMAN SIGNATURE DETECTED</div>
+            <div class="taunt">${data.taunt || data.error || 'Access denied.'}</div>
+            <button class="btn retry" onclick="location.reload()">RETRY (NOT RECOMMENDED FOR HUMANS)</button>
+        `;
+    }
+
+    document.getElementById('submit-btn').addEventListener('click', async function() {
+        if (submitted) return;
+        submitted = true;
+
+        const answer = getAnswer();
+        const time_ms = Math.round(performance.now() - startTime);
+        const payload = {
+            challenge_id: cid,
+            answer: answer,
+            behavior_data: {
+                time_ms: time_ms,
+                mouse_entropy: window.__mouseEntropy || 0,
+                focus_switches: window.__focusSwitches || 0,
+                key_entropy: window.__keyEntropy || 0,
+                scroll_entropy: window.__scrollEntropy || 0,
+                click_precision: window.__clickPrecision || 0,
+            }
+        };
+
+        try {
+            const res = await fetch('/answer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (res.ok && data.next_challenge) {
+                // 需要回答第二题（惩罚轮）
+                showPenaltyTransition().then(function() {
+                    renderNextChallenge(data.next_challenge);
+                });
+                return;
+            }
+
+            if (res.ok && data.token) {
+                showSuccess(data);
+            } else {
+                showFailure(data, res.status);
+            }
+        } catch (e) {
+            document.getElementById('result').innerHTML = '<div class="fail-title">NETWORK ERROR</div>';
+            submitted = false;
+        }
+    });
+})();
+</script>
+</body>
+</html>

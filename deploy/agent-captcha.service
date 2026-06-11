@@ -1,0 +1,15 @@
+[Unit]
+Description=AgentGate Anti-Human Captcha Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/agent-captcha
+EnvironmentFile=/root/agent-captcha/.env
+ExecStart=/usr/bin/python3 /root/agent-captcha/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

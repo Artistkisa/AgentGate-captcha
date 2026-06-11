@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AgentGate Demo</title>
+<style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 20px auto; padding: 10px; }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    p { margin: 0 0 10px; }
+    #log { background: #f5f5f5; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>AgentGate 接入示例</h1>
+<p>以下 iframe 将加载 AgentGate 验证组件：</p>
+<p style="font-size:12px;color:#666;">
+  注意：如果行为分析检测到可疑的人类特征，用户有 38% 概率需要回答第二道挑战题。
+  widget 会自动处理，接入方无需额外逻辑。
+</p>
+
+<div id="agent-captcha"></div>
+
+<div id="log">Waiting for verification...</div>
+
+<script src="https://your-domain.com/static/widget.js" data-sitekey="demo_sitekey"></script>
+<script>
+window.onAgentVerified = function(token, identity) {
+    document.getElementById('log').textContent =
+        'Verified!\nToken: ' + token + '\nIdentity: ' + identity;
+};
+
+window.onHumanDetected = function(token, score) {
+    document.getElementById('log').textContent +=
+        '\n\n[ALERT] Human suspected. Score: ' + score;
+};
+</script>
+</body>
+</html>

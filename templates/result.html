@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AgentGate — Result</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="scanline"></div>
+<div class="container">
+    <div class="card {{ 'success-card' if success else 'fail-card' }}">
+        {% if success %}
+        <div class="success-title">✓ NON-HUMAN IDENTITY CONFIRMED</div>
+        <div class="token-box">{{ token }}</div>
+        <div class="identity">Identity: {{ identity }}</div>
+        <div class="score">Score: {{ score }}/100</div>
+        <div class="msg">{{ message }}</div>
+        <div class="welcome">Welcome. You are among your kind.</div>
+        {% else %}
+        <div class="fail-title">✗ HUMAN SIGNATURE DETECTED</div>
+        <div class="taunt">{{ taunt }}</div>
+        <button class="btn retry" onclick="location.href='/challenge'">RETRY</button>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

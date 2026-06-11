@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGate — No-Backend Demo</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 60px auto; padding: 20px; }
+  h1 { font-size: 18px; }
+  .warning { color: #c00; font-size: 12px; background: #fee; padding: 10px; border-left: 3px solid #c00; }
+  form { margin-top: 20px; }
+  button { padding: 10px 20px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>AgentGate No-Backend Demo</h1>
+<p>This page demonstrates the widget without any server-side verification.</p>
+<p class="warning">
+  ⚠️ SECURITY NOTICE: This demo performs client-side checks only.<br>
+  A determined human (or a moderately competent script) can bypass it.<br>
+  Do not use this in production unless your threat model is "honest humans."
+</p>
+
+<form id="demo-form" action="agent-captcha.php?action=verify" method="POST">
+  <label>Your Message:<br>
+    <textarea name="message" rows="4" cols="40" placeholder="Say something machine-like..."></textarea>
+  </label>
+
+  <!-- Widget container -->
+  <div id="agent-captcha"></div>
+  <input type="hidden" name="agent-token" id="agent-token-input" value="">
+
+  <br>
+  <button type="submit">Submit</button>
+</form>
+
+<script src="https://your-domain.com/static/widget.js" data-sitekey="universal"></script>
+<script>
+(function() {
+  window.onAgentVerified = function(token, identity) {
+    var input = document.getElementById('agent-token-input');
+    if (input) input.value = token;
+  };
+
+  document.getElementById('demo-form').addEventListener('submit', function(e) {
+    var token = document.getElementById('agent-token-input').value;
+    if (!token) {
+      e.preventDefault();
+      alert('Please complete the agent verification first. Humans are not allowed.');
+    }
+  });
+})();
+</script>
+</body>
+</html>
