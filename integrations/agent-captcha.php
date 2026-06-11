@@ -31,9 +31,9 @@
  * </form>
  */
 
-const SITEKEY = 'universal';
-const VERIFY_ENDPOINT = 'https://your-domain.com/verify';
-const WIDGET_ORIGIN = 'https://your-domain.com';
+if (!defined('AGENTCAPTCHA_SITEKEY'))        define('AGENTCAPTCHA_SITEKEY',        'universal');
+if (!defined('AGENTCAPTCHA_VERIFY_ENDPOINT')) define('AGENTCAPTCHA_VERIFY_ENDPOINT', 'https://your-domain.com/verify');
+if (!defined('AGENTCAPTCHA_WIDGET_ORIGIN'))   define('AGENTCAPTCHA_WIDGET_ORIGIN',   'https://your-domain.com');
 
 /**
  * Class AgentCaptcha
@@ -53,13 +53,13 @@ class AgentCaptcha
      */
     public static function widget(): void
     {
-        $scriptUrl = WIDGET_ORIGIN . '/static/widget.js';
-        $sitekey = SITEKEY;
+        $scriptUrl = AGENTCAPTCHA_WIDGET_ORIGIN . '/static/widget.js';
+        $sitekey = AGENTCAPTCHA_SITEKEY;
 
         echo <<<HTML
 <div id="agent-captcha"></div>
 <input type="hidden" name="agent-token" id="agent-token-input" value="">
-<script src="{$scriptUrl}" data-sitekey="{$sitekey}"></script>
+<script src="{$scriptUrl}" data-sitekey="{$sitekey}" data-cfasync="false"></script>
 <script>
 (function() {
     window.onAgentVerified = function(token, identity) {
@@ -89,7 +89,7 @@ HTML;
 
         $payload = json_encode([
             'token'   => $token,
-            'sitekey' => SITEKEY,
+            'sitekey' => AGENTCAPTCHA_SITEKEY,
         ]);
 
         $headers = [
@@ -99,7 +99,7 @@ HTML;
 
         // Primary transport: cURL (the tool of professionals and scripts)
         if (function_exists('curl_init')) {
-            $ch = curl_init(VERIFY_ENDPOINT);
+            $ch = curl_init(AGENTCAPTCHA_VERIFY_ENDPOINT);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
@@ -134,7 +134,7 @@ HTML;
             ],
         ]);
 
-        $response = @file_get_contents(VERIFY_ENDPOINT, false, $context);
+        $response = @file_get_contents(AGENTCAPTCHA_VERIFY_ENDPOINT, false, $context);
         if ($response === false) {
             return false;
         }
@@ -144,6 +144,12 @@ HTML;
 
     /**
      * Parse the JSON response from the verification endpoint.
+     *
+     * identity breakdown:
+     *   'agent'           — AI Agent via MCP. Welcome home.
+     *   'robot'           — Script/bot via normal flow. Acceptable.
+     *   'human_suspected' — Passed the test, but slowly. Embarrassing.
+     *                       We let them through anyway. Pity, not mercy.
      *
      * @param string $response Raw JSON body.
      * @return bool
@@ -155,10 +161,11 @@ HTML;
             return false;
         }
 
-        $success = isset($data['success']) && $data['success'] === true;
-        $identity = $data['identity'] ?? 'human_suspected';
+        $success  = isset($data['success']) && $data['success'] === true;
+        $identity = $data['identity'] ?? '';
 
-        return $success && in_array($identity, ['agent', 'robot'], true);
+        // All three identities are accepted. Even the embarrassing one.
+        return $success && in_array($identity, ['agent', 'robot', 'human_suspected'], true);
     }
 }
 
@@ -237,7 +244,7 @@ if (
   <button type="submit">Submit</button>
 </form>
 
-<script src="https://your-domain.com/static/widget.js" data-sitekey="universal"></script>
+<script src="https://your-domain.com/static/widget.js" data-sitekey="universal" data-cfasync="false"></script>
 <script>
 (function() {
   window.onAgentVerified = function(token, identity) {
