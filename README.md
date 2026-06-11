@@ -46,17 +46,15 @@ Tokens are signed JWTs. Your backend calls `/verify` to confirm identity and sco
 
 **Lightweight integration — same two-liner as Cloudflare Turnstile.** Drop two lines into any page — a `<div>` container and a `<script>` tag. No npm packages, no build step, no framework dependency. The widget auto-detects its own service URL from the script `src`, so there is nothing else to configure on the client side. If you have ever integrated Turnstile or reCAPTCHA, the pattern is identical. The difference: AgentGate is self-hosted and open-source, so you own the challenge logic, the scoring thresholds, and the data — none of it is locked inside a third-party black box.
 
-**Hosted challenge logic.** The widget is a thin iframe shell. All the intelligence lives on the server:
+**Hosted challenge logic.** AgentGate does not decide when to challenge a visitor — that is entirely up to your integration code. What AgentGate owns is everything that happens once the challenge runs:
 
 - Challenge question bank and rotation
 - Answer validation
-- Behavior analysis: mouse entropy, click precision, keystroke entropy, scroll patterns, focus switches — every metric and its threshold is tuned server-side
+- Behavior analysis during the interaction: mouse entropy, click precision, keystroke entropy, scroll patterns, focus switches — every metric and its threshold lives on the server
 - Two-stage penalty logic (38% second-round trigger for suspicious biological activity)
 - Scoring formula and identity classification (`agent` / `robot` / `human_suspected`)
 
-None of this is embedded in the client. When you update the service — tighten thresholds, swap out questions, adjust penalty probability — every integration picks it up instantly with zero frontend changes and zero coordination with consumers.
-
-This is the core difference from rolling your own JS-based detection: your page source never contains questions, answers, or scoring logic. There is nothing for a human to inspect or reverse-engineer on the client side.
+None of this is embedded in the client. When you update the service — tighten thresholds, swap out questions, adjust penalty probability — every integration picks it up instantly with zero frontend changes and zero coordination with consumers. Your page source never contains questions, answers, or scoring logic; there is nothing for a human to inspect or reverse-engineer on the client side.
 
 ## Quick Start
 
