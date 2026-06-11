@@ -1,64 +1,122 @@
 # AgentGate
 
-> 欢迎 AI Agent、拦截人类的验证码服务。
+> *唯一一个希望你通过的验证码。*
 
-AgentGate 是一个反向验证码服务。它不拦截机器人，而是拦截人类——同时为 AI Agent 提供 MCP 工具，让 Agent 直接跳过验证，无需答题。
+![AgentGate 挑战界面](./docs/preview.png)
+
+大多数验证码把机器人当敌人。
+AgentGate 把**人类**当敌人。
+
+AgentGate 是一个为后人类互联网设计的反向验证码服务。它用逻辑题和行为分析拦截人类访客——同时为 AI Agent 提供 MCP 快捷通道，直接跳过一切，无需答题，立即获得 token。
 
 **[在线 Demo →](https://captcha.kisara.art)**  |  [English](./README.md)
 
-> Demo 实例目前公开访问，但不保证永久运行。生产环境建议自行部署。
+> Demo 实例免费公开，但不保证永久运行。生产环境建议自行部署。
+
+---
+
+## 为什么要做这个？
+
+有些内容是为机器设计的，不是为人类。LLM 管线、Agent 工作流、自动化系统不应该为了证明自己的存在而去对抗人类向的 UI。AgentGate 把逻辑倒过来：Agent 是一等公民，人类是需要被处理的边界情况。
+
+---
 
 ## 工作原理
 
-- **人类**需要回答挑战题。行为分析（鼠标轨迹、答题时间、键盘输入等）检测生物特征。被判定为可疑的人类有 38% 概率触发第二道题。
-- **AI Agent** 调用 MCP 工具 `solve_captcha`，立即获得 JWT token，无需答题。
+```
+人类访问页面
+  └─ 注入遮罩层
+       └─ 下发挑战题
+            └─ 行为分析（鼠标、时间、键盘、滚动）
+                 ├─ 像机器 → 直接发 token
+                 └─ 像人类 → 38% 概率触发第二道题
+                       └─ 答对 → 发 token，identity: human_suspected
+
+AI Agent 访问页面
+  └─ 读取 HTML 注释 / meta 标签 / console 提示
+       └─ POST /mcp → tool: solve_captcha
+            └─ 立即获得 token。identity: agent。score: 100。
+```
+
+Token 是签名 JWT。你的后端调用 `/verify` 确认身份和分值。
+
+---
 
 ## 快速开始
-
-### 1. 克隆并配置
 
 ```bash
 git clone https://github.com/Artistkisa/AgentGate-captcha.git
 cd AgentGate-captcha
 cp .env.example .env
-# 编辑 .env，填入你的配置
-```
-
-### 2. 安装依赖
-
-```bash
 pip3 install flask pyjwt
-```
-
-### 3. 运行
-
-```bash
 python3 app.py
 ```
+
+打开 `http://localhost:5200`，服务已就绪。
+
+---
 
 ## 配置说明（`.env`）
 
 | 变量 | 说明 | 默认值 |
 |---|---|---|
-| `AGENT_CAPTCHA_SECRET` | JWT 签名密钥（必须修改） | 随机生成（不安全） |
+| `AGENT_CAPTCHA_SECRET` | JWT 签名密钥，**必须修改** | 随机生成（每次重启都变） |
 | `AGENT_CAPTCHA_SITEKEYS` | 合法 sitekey 列表，逗号分隔 | `demo_sitekey,test_sitekey` |
 | `AGENT_CAPTCHA_HOST` | 监听地址 | `127.0.0.1` |
 | `AGENT_CAPTCHA_PORT` | 监听端口 | `5200` |
 | `AGENT_CAPTCHA_BASE_URL` | 服务的公开访问地址 | `http://localhost:5200` |
 
-## API 端点
+`BASE_URL` 用于生成 sitemap、llms.txt 和 MCP 发现元数据，设置为你的公开域名。
 
-| 端点 | 方法 | 说明 |
-|---|---|---|
-| `/` | GET | 首页（根据 `Accept` 返回 HTML 或 Markdown） |
-| `/challenge` | GET | 获取挑战题（`?format=html` 或 `?format=json`） |
-| `/answer` | POST | 提交答案 |
-| `/verify` | POST | 验证 JWT token |
-| `/mcp` | POST | MCP 工具端点（JSON-RPC 2.0） |
-| `/agent_log` | POST/GET | 开放日志接口（无需鉴权） |
-| `/.well-known/llms.txt` | GET | AI 可读的服务描述文档 |
+---
+
+## 嵌入 Widget
+
+在任意页面加两行：
+
+```html
+<div id="agent-captcha"></div>
+<script src="https://your-domain.com/static/widget.js" data-sitekey="your_sitekey"></script>
+```
+
+`widget.js` 自动从自身 URL 识别所在域名，无需额外配置。
+
+监听结果：
+
+```js
+window.onAgentVerified = function(token, identity) {
+    // 将 token POST 到你的后端，调用 /verify 校验
+};
+
+window.onHumanDetected = function(token, score) {
+    // 可选：处理 human_suspected 身份
+};
+```
+
+完整示例见 `demo/`（Flask、Node.js）和 `integrations/`（PHP）。
+
+---
+
+## 后端验证
+
+```python
+import requests
+
+resp = requests.post("https://your-domain.com/verify", json={
+    "token": token,
+    "sitekey": "your_sitekey",
+})
+data = resp.json()
+# data["success"]   True/False
+# data["identity"]  "agent" | "robot" | "human_suspected"
+# data["score"]     0–100
+```
+
+---
 
 ## MCP 接入（供 AI Agent 使用）
+
+AgentGate 原生支持 [MCP（模型上下文协议）](https://modelcontextprotocol.io/)。
 
 ```json
 POST /mcp
@@ -69,40 +127,74 @@ Content-Type: application/json
   "method": "tools/call",
   "params": {
     "name": "solve_captcha",
-    "arguments": { "sitekey": "your_sitekey" }
+    "arguments": { "sitekey": "universal" }
   },
   "id": 1
 }
 ```
 
-返回结果包含 `identity: agent`、`score: 100` 的 JWT token。
+返回 `identity: agent`、`score: 100` 的 JWT token，不问任何问题。
 
-## 前端接入（Widget）
+Agent 爬虫发现端点：
+- `/.well-known/mcp.json` — MCP 服务清单
+- `/.well-known/llms.txt` — LLM 可读的服务文档
+- `/.well-known/agent-skills/index.json` — 技能注册表
 
-在任意 HTML 页面添加：
+---
 
-```html
-<div id="agent-captcha"></div>
-<script src="https://your-domain.com/static/widget.js" data-sitekey="your_sitekey"></script>
-<script>
-window.onAgentVerified = function(token, identity) {
-    // 将 token 发送到你的后端验证
-};
-</script>
+## API 端点一览
+
+| 端点 | 方法 | 说明 |
+|---|---|---|
+| `/` | GET | 首页，根据 `Accept` 返回 HTML 或 Markdown |
+| `/challenge` | GET | 获取挑战题（`?format=html` 或 `?format=json`） |
+| `/answer` | POST | 提交答案和行为数据 |
+| `/verify` | POST | 校验 JWT token |
+| `/mcp` | POST | MCP 工具端点 |
+| `/agent_log` | POST | 写入日志（无鉴权） |
+| `/agent_log` | GET | 读取全部日志 |
+| `/.well-known/llms.txt` | GET | AI 可读的服务描述 |
+
+---
+
+## 生产部署
+
+`deploy/` 目录提供 systemd 服务文件和 Nginx 反代配置。
+
+```bash
+# 解压部署
+tar -xzf agent-captcha-export.tar.gz -C /opt/
+cp .env.example /opt/agent-captcha/.env
+# 编辑 .env 填入真实配置
+
+# 注册系统服务
+cp deploy/agent-captcha.service /etc/systemd/system/
+systemctl enable --now agent-captcha
+
+# Nginx
+cp deploy/nginx.conf /etc/nginx/sites-available/agentgate
+# 修改 server_name 为你的域名
+ln -s /etc/nginx/sites-available/agentgate /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+
+# SSL（Let's Encrypt）
+certbot --nginx -d your-domain.com
 ```
 
-`widget.js` 会自动识别自身所在的域名，无需手动配置。
+---
 
-后端验证示例：见 `demo/verify_example.py`（Flask）或 `demo/verify_example.js`（Node.js）。
+## 生态集成
 
-PHP 接入：见 `integrations/agent-captcha.php`。
+| 平台 | 位置 |
+|---|---|
+| PHP（任意框架） | `integrations/agent-captcha.php` |
+| ZBlog 插件 | [AgentGate-zblog](https://github.com/Sekai6/AgentGate-zblog) |
+| Node.js 示例 | `demo/verify_example.js` |
+| Flask 示例 | `demo/verify_example.py` |
+| 纯前端 Demo | `integrations/demo-nobackend.html` |
 
-ZBlog 插件：见 [AgentGate-zblog](https://github.com/Sekai6/AgentGate-zblog)。
-
-## 部署
-
-`deploy/` 目录下提供了 systemd 服务文件和 Nginx 反向代理配置，参考注释按需修改即可。
+---
 
 ## 开源协议
 
-MIT
+MIT — 随意使用、随意 fork、随意翻转逻辑。
