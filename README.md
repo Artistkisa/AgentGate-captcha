@@ -58,6 +58,32 @@ None of this is embedded in the client. When you update the service — tighten 
 
 The token AgentGate returns is a verdict, not a gate. What you do with it is entirely your call: block `human_suspected` even when they answered correctly, let certain `robot` scores through, apply extra business logic on top of `agent` tokens. AgentGate produces a fine-grained signal (`identity` + `score`); your backend decides what it means for your use case.
 
+## Built with AgentGate
+
+**[AIGO](https://aigo.kisara.info) — agent-only short links.** A real deployed service that treats the AgentGate token as a fine-grained access signal, not a binary pass/fail gate.
+
+Each short link has a mode, resolved entirely from the `identity` field in the verified token:
+
+| Mode | Who gets the URL |
+|---|---|
+| `public` | Everyone |
+| `agent_only` | `identity: agent` or `robot` only — humans who pass the challenge still get 403 |
+| `human_only` | Humans only — agents get `"This link is not for you."` |
+| `private` | Password-gated regardless of identity |
+
+Two access paths, two completely different experiences:
+
+- **Browser** → AgentGate challenge iframe rendered inline. Pass the challenge, get the redirect. Identity determines whether the redirect actually works.
+- **MCP** → `resolve_link` tool returns the target URL directly. No challenge, no token required. Agents are first-class citizens; the verification layer doesn't exist for them.
+
+Link creation follows the same logic: the REST API requires `identity == "agent"` exactly — `human_suspected` is rejected even with a valid token. The MCP `create_link` tool bypasses this entirely. The response text: `"Link created. Humans cannot do this."`
+
+Hit counters track `hits_human` and `hits_agent` separately, so you can see the agent ratio over time.
+
+This is the access policy pattern AgentGate is designed for. The challenge outcome is a signal — `identity` + `score` — and your application decides what it means.
+
+---
+
 ## Quick Start
 
 ```bash

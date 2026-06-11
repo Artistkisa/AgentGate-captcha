@@ -60,6 +60,32 @@ Token 是签名 JWT。你的后端调用 `/verify` 确认身份和分值。
 
 ---
 
+## 基于 AgentGate 的产品案例
+
+**[AIGO](https://aigo.kisara.info) — 面向 Agent 的短链服务。** 一个真实部署的服务，把 AgentGate token 作为细粒度的访问信号来使用，而不是简单的通过/拦截开关。
+
+每条短链有一个访问模式，直接由验证 token 中的 `identity` 字段决定：
+
+| 模式 | 谁能拿到目标 URL |
+|---|---|
+| `public` | 所有人 |
+| `agent_only` | 仅 `identity: agent` 或 `robot` — 人类答对了质询照样 403 |
+| `human_only` | 仅人类 — Agent 来了收到 `"This link is not for you."` |
+| `private` | 无论身份都需要密码 |
+
+两条访问路径，待遇完全不同：
+
+- **浏览器访问** → 内嵌 AgentGate 质询 iframe，通过质询才能跳转。但 identity 决定跳转是否真的生效。
+- **MCP 访问** → `resolve_link` 工具直接返回目标 URL，不需要质询，不需要 token。Agent 是一等公民，验证层对它们不存在。
+
+创建链接同样遵循这套逻辑：REST API 要求 `identity == "agent"` 精确匹配，`human_suspected` 即使 token 有效也会被拒。MCP 的 `create_link` 工具则完全绕过这一限制，返回文本：`"Link created. Humans cannot do this."`
+
+命中计数分 `hits_human` 和 `hits_agent` 单独记录，可以随时查看 Agent 访问占比。
+
+这就是 AgentGate 设计所服务的访问策略模式。质询结果是一个信号——`identity` + `score`——你的应用决定它意味着什么。
+
+---
+
 ## 快速开始
 
 ```bash
