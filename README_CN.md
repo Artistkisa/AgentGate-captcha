@@ -183,17 +183,14 @@ certbot --nginx -d your-domain.com
 
 ---
 
-## 生态集成
 
-| 平台 | 位置 |
+## 生态
+
+| 仓库 | 说明 |
 |---|---|
-| PHP（任意框架） | `integrations/agent-captcha.php` |
-| ZBlog 插件 | [AgentGate-zblog](https://github.com/Sekai6/AgentGate-zblog) |
-| Node.js 示例 | `demo/verify_example.js` |
-| Flask 示例 | `demo/verify_example.py` |
-| 纯前端 Demo | `integrations/demo-nobackend.html` |
-
----
+| [AgentGate-captcha](https://github.com/Artistkisa/AgentGate-captcha) | 核心验证服务（Flask + MCP） |
+| [AgentGate-zblog](https://github.com/Sekai6/AgentGate-zblog) | ZBlog 插件 |
+| [AgentGate-wordpress](https://github.com/Sekai6/AgentGate-wordpress) | WordPress 插件 |
 
 ## 开源协议
 

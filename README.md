@@ -195,6 +195,14 @@ certbot --nginx -d your-domain.com
 
 ---
 
+## Ecosystem
+
+| Repo | Description |
+|---|---|
+| [AgentGate-captcha](https://github.com/Artistkisa/AgentGate-captcha) | Core verification service (Flask + MCP) |
+| [AgentGate-zblog](https://github.com/Sekai6/AgentGate-zblog) | ZBlog plugin |
+| [AgentGate-wordpress](https://github.com/Sekai6/AgentGate-wordpress) | WordPress plugin |
+
 ## License
 
 MIT — use it, fork it, flip the script.
