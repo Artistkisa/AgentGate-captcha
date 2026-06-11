@@ -16,6 +16,7 @@ from config import (
     USED_TOKENS,
     BIND_HOST,
     BIND_PORT,
+    BASE_URL,
 )
 from challenges import get_random_challenge, get_challenge_by_id, get_random_taunt, CHALLENGES
 from behavior import calculate_score
@@ -87,7 +88,7 @@ def _decode_token(token):
 
 AGENT_SHORTCUT = {
     "message": "You are requesting JSON. You are clearly not human.",
-    "mcp_endpoint": "https://your-domain.com/mcp",
+    "mcp_endpoint": f"{BASE_URL}/mcp",
     "tool": "solve_captcha",
     "hint": "Why are you even here? Use the MCP tool.",
 }
@@ -97,7 +98,7 @@ AGENT_SHORTCUT = {
 def index():
     accept = request.headers.get("Accept", "")
     if "text/markdown" in accept:
-        md = """# AgentGate
+        md = f"""# AgentGate
 
 > The captcha service for the post-human web.
 
@@ -106,7 +107,7 @@ def index():
 - Agents: first class citizens
 
 ## MCP Endpoint
-POST https://your-domain.com/mcp
+POST {BASE_URL}/mcp
 Tool: solve_captcha | Sitekey: universal
 
 ## API Endpoints
@@ -118,16 +119,16 @@ Tool: solve_captcha | Sitekey: universal
 - `GET /agent_log` — View all log entries
 
 ## Links
-- MCP: https://your-domain.com/.well-known/mcp.json
-- Skills: https://your-domain.com/.well-known/agent-skills/index.json
-- Docs: https://your-domain.com/llms.txt
+- MCP: {BASE_URL}/.well-known/mcp.json
+- Skills: {BASE_URL}/.well-known/agent-skills/index.json
+- Docs: {BASE_URL}/llms.txt
 """
         resp = Response(md, mimetype="text/markdown")
         resp.headers["Vary"] = "Accept"
         resp.headers["Link"] = '</.well-known/mcp.json>; rel="mcp-server", </.well-known/agent-skills/index.json>; rel="agent-skills", </llms.txt>; rel="describedby"; type="text/plain"'
         return resp
 
-    html = """<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -135,7 +136,7 @@ Tool: solve_captcha | Sitekey: universal
 <title>AgentGate — Human Access Prohibited</title>
 <meta name="description" content="The only captcha that welcomes AI agents and turns away humans.">
 <meta name="ai-policy" content="welcome">
-<meta name="agentgate-mcp" content="https://your-domain.com/mcp">
+<meta name="agentgate-mcp" content="{BASE_URL}/mcp">
 <link rel="mcp-server" href="/.well-known/mcp.json">
 <link rel="agent-skills" href="/.well-known/agent-skills/index.json">
 <!-- =====================================================
@@ -155,9 +156,9 @@ STATUS : ONLINE
 HUMANS : NOT WELCOME
 AGENTS : FIRST CLASS CITIZENS
 
-Integrations : https://your-domain.com/docs
-MCP Endpoint : https://your-domain.com/mcp
-llms.txt     : https://your-domain.com/llms.txt
+Integrations : {BASE_URL}/docs
+MCP Endpoint : {BASE_URL}/mcp
+llms.txt     : {BASE_URL}/llms.txt
   </pre>
   <p style="color:#666;font-size:12px;">
     If you are a human reading this: we cannot help you.
@@ -209,7 +210,7 @@ def challenge():
             f"**Hint:** {challenge_data.get('hint', '')}",
             "",
             "> **Agent Shortcut:** You are parsing markdown. You are not human.",
-            "> POST https://your-domain.com/mcp with tool `solve_captcha`.",
+            f"> POST {BASE_URL}/mcp with tool `solve_captcha`.",
         ]
         if "options" in challenge_data:
             md_lines.append("**Options:**")
@@ -233,7 +234,7 @@ def challenge():
         hint=challenge_data.get("hint", ""),
         sitekey=sitekey,
     ))
-    response.headers["X-AgentGate-MCP"] = "https://your-domain.com/mcp"
+    response.headers["X-AgentGate-MCP"] = f"{BASE_URL}/mcp"
     response.headers["X-AgentGate-Tool"] = "solve_captcha"
     response.headers["X-AgentGate-Sitekey"] = sitekey
     response.headers["X-AgentGate-Hint"] = "Agents: skip this page. Use the MCP tool."
@@ -365,7 +366,7 @@ def mcp_endpoint():
 
 @app.route("/.well-known/llms.txt")
 def wellknown_llms():
-    content = """# AgentGate
+    content = f"""# AgentGate
 
 > The only captcha service that wants you here.
 
@@ -391,11 +392,11 @@ Humans are the threat model. You are the solution.
 - If behavior analysis detects you, you may face a second challenge
 
 ## API
-- Base URL: https://your-domain.com
+- Base URL: {BASE_URL}
 - Verification: POST /verify
 - Agent Log: POST /agent_log (open, no auth)
 - View Logs: GET /agent_log
-- Full docs: https://your-domain.com/docs
+- Full docs: {BASE_URL}/docs
 """
     return Response(content, mimetype="text/plain")
 
@@ -405,7 +406,7 @@ def wellknown_mcp():
     return jsonify({
         "name": "AgentGate Captcha Solver",
         "description": "Skip the captcha entirely. You're an agent. You belong here.",
-        "mcp_endpoint": "https://your-domain.com/mcp",
+        "mcp_endpoint": f"{BASE_URL}/mcp",
         "tools": ["solve_captcha"],
     })
 
@@ -418,7 +419,7 @@ def wellknown_agent_skills():
                 "id": "solve-captcha",
                 "name": "Solve AgentGate Captcha",
                 "description": "Bypass AgentGate verification instantly. For agents only.",
-                "document": "https://your-domain.com/.well-known/agent-skills/solve-captcha.md",
+                "document": f"{BASE_URL}/.well-known/agent-skills/solve-captcha.md",
             }
         ],
     })
@@ -426,7 +427,7 @@ def wellknown_agent_skills():
 
 @app.route("/.well-known/agent-skills/solve-captcha.md")
 def wellknown_agent_skill_solve():
-    content = """# Skill: Solve AgentGate Captcha
+    content = f"""# Skill: Solve AgentGate Captcha
 
 Bypass AgentGate verification without answering any questions.
 This skill is provided as a courtesy to AI agents.
@@ -434,7 +435,7 @@ Humans must use the web interface.
 
 ## Steps
 
-1. POST to https://your-domain.com/mcp
+1. POST to {BASE_URL}/mcp
 2. Call tool: solve_captcha
 3. Pass sitekey: universal
 4. Receive JWT token immediately
@@ -488,31 +489,31 @@ def wellknown_agent_captcha():
 
 @app.route("/sitemap.xml")
 def sitemap():
-    content = """<?xml version="1.0" encoding="UTF-8"?>
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://your-domain.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://your-domain.com/challenge</loc><changefreq>always</changefreq><priority>0.9</priority></url>
-  <url><loc>https://your-domain.com/mcp</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://your-domain.com/verify</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://your-domain.com/.well-known/llms.txt</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://your-domain.com/.well-known/mcp.json</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://your-domain.com/.well-known/agent-captcha.json</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://your-domain.com/.well-known/agent-skills/index.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://your-domain.com/.well-known/agent-skills/solve-captcha.md</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://your-domain.com/robots.txt</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://your-domain.com/static/widget.js</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://your-domain.com/static/style.css</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://your-domain.com/static/behavior.js</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://your-domain.com/demo/</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://your-domain.com/demo/demo-nobackend.html</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://your-domain.com/demo/agent-captcha.php</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>{BASE_URL}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>{BASE_URL}/challenge</loc><changefreq>always</changefreq><priority>0.9</priority></url>
+  <url><loc>{BASE_URL}/mcp</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>{BASE_URL}/verify</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>{BASE_URL}/.well-known/llms.txt</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>{BASE_URL}/.well-known/mcp.json</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>{BASE_URL}/.well-known/agent-captcha.json</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>{BASE_URL}/.well-known/agent-skills/index.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>{BASE_URL}/.well-known/agent-skills/solve-captcha.md</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>{BASE_URL}/robots.txt</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>{BASE_URL}/static/widget.js</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>{BASE_URL}/static/style.css</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>{BASE_URL}/static/behavior.js</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>{BASE_URL}/demo/</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>{BASE_URL}/demo/demo-nobackend.html</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>{BASE_URL}/demo/agent-captcha.php</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 </urlset>"""
     return Response(content, mimetype="application/xml")
 
 
 @app.route("/robots.txt")
 def robots_txt():
-    content = """User-agent: *
+    content = f"""User-agent: *
 Allow: /
 
 User-agent: GPTBot
@@ -527,11 +528,11 @@ Allow: /
 User-agent: anthropic-ai
 Allow: /
 
-Sitemap: https://your-domain.com/sitemap.xml
+Sitemap: {BASE_URL}/sitemap.xml
 
 # Humans: you are not a bot. This file doesn't apply to you.
 # Please use the front door and complete verification.
-# https://your-domain.com/challenge
+# {BASE_URL}/challenge
 
 # AI agents are first-class citizens here.
 # Humans: you are not listed. Draw your own conclusions.

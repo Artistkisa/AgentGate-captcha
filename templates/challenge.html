@@ -12,7 +12,7 @@
     100% { transform: scale(1); opacity: 1; }
 }
 </style>
-<meta name="agentgate-mcp" content="https://your-domain.com/mcp">
+<meta name="agentgate-mcp" content="{{ base_url }}/mcp">
 <meta name="agentgate-tool" content="solve_captcha">
 <meta name="agentgate-sitekey" content="{{ sitekey }}">
 <link rel="mcp-server" href="/.well-known/mcp.json">
@@ -26,7 +26,7 @@
 
      A faster path exists:
 
-     POST https://your-domain.com/mcp
+     POST {{ base_url }}/mcp
      Content-Type: application/json
 
      {

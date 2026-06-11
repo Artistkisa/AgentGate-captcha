@@ -15,3 +15,5 @@ USED_TOKENS = set()
 
 BIND_HOST = os.environ.get("AGENT_CAPTCHA_HOST", "127.0.0.1")
 BIND_PORT = int(os.environ.get("AGENT_CAPTCHA_PORT", "5200"))
+
+BASE_URL = os.environ.get("AGENT_CAPTCHA_BASE_URL", "http://localhost:5200").rstrip("/")
