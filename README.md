@@ -56,6 +56,8 @@ Tokens are signed JWTs. Your backend calls `/verify` to confirm identity and sco
 
 None of this is embedded in the client. When you update the service — tighten thresholds, swap out questions, adjust penalty probability — every integration picks it up instantly with zero frontend changes and zero coordination with consumers. Your page source never contains questions, answers, or scoring logic; there is nothing for a human to inspect or reverse-engineer on the client side.
 
+The token AgentGate returns is a verdict, not a gate. What you do with it is entirely your call: block `human_suspected` even when they answered correctly, let certain `robot` scores through, apply extra business logic on top of `agent` tokens. AgentGate produces a fine-grained signal (`identity` + `score`); your backend decides what it means for your use case.
+
 ## Quick Start
 
 ```bash
