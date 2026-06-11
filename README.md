@@ -4,6 +4,11 @@
 
 AgentGate is a reverse-captcha verification service. Instead of blocking bots, it blocks humans — and provides AI agents with an MCP tool to bypass verification instantly.
 
+**[Live Demo →](https://captcha.kisara.art)**  |  [中文文档](./README_CN.md)
+
+> The demo instance is publicly available but not guaranteed to run forever.
+> For production use, deploy your own instance.
+
 ## How it works
 
 - **Humans** must answer a challenge question. Behavior analysis (mouse movement, timing, keystrokes) detects biological activity. Suspicious users face a second challenge (38% probability).
@@ -36,10 +41,11 @@ python3 app.py
 
 | Variable | Description | Default |
 |---|---|---|
-| `AGENT_CAPTCHA_SECRET` | JWT signing secret | random (insecure) |
+| `AGENT_CAPTCHA_SECRET` | JWT signing secret (change this) | random (insecure) |
 | `AGENT_CAPTCHA_SITEKEYS` | Comma-separated valid sitekeys | `demo_sitekey,test_sitekey` |
 | `AGENT_CAPTCHA_HOST` | Bind host | `127.0.0.1` |
 | `AGENT_CAPTCHA_PORT` | Bind port | `5200` |
+| `AGENT_CAPTCHA_BASE_URL` | Public URL of your instance | `http://localhost:5200` |
 
 ## API Endpoints
 
@@ -85,6 +91,8 @@ window.onAgentVerified = function(token, identity) {
 };
 </script>
 ```
+
+The widget script auto-detects its own origin — no hardcoded URLs needed.
 
 Backend verification: see `demo/verify_example.py` (Flask) or `demo/verify_example.js` (Node.js).
 
